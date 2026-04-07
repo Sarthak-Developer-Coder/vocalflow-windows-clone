@@ -24,3 +24,11 @@ __MACOSX/
 *.key
 *.p12
 *.mobileprovision
+
+# Node / Electron
+node_modules/
+dist/
+out/
+
+# Local runtime config (keep example file in git, real keys only locally)
+config/config.json

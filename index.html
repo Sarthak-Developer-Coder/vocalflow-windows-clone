@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>VocalFlow for Windows</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 16px;
+    }
+    button {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button.primary {
+      background: #4f46e5;
+      color: white;
+    }
+    button.primary.recording {
+      background: #dc2626;
+    }
+    .card {
+      background: #020617;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      border: 1px solid #1f2937;
+    }
+    .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #9ca3af;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      padding: 8px;
+      background: #020617;
+      color: #e5e7eb;
+      font-family: system-ui, sans-serif;
+      font-size: 13px;
+    }
+    .balances {
+      display: flex;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .badge {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #111827;
+      border: 1px solid #1f2937;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .small {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+    }
+    .status-dot.ok {
+      background: #22c55e;
+    }
+    .status-dot.warn {
+      background: #eab308;
+    }
+    .status-dot.error {
+      background: #f97316;
+    }
+    .chat-card {
+      max-height: 260px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #chatMessages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-right: 4px;
+    }
+    .bubble {
+      max-width: 80%;
+      padding: 6px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .bubble.user {
+      margin-left: auto;
+      background: #4f46e5;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    .bubble.assistant {
+      margin-right: auto;
+      background: #111827;
+      border-bottom-left-radius: 4px;
+    }
+    .chat-input-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-top: 2px;
+    }
+    .chat-input-row input {
+      flex: 1;
+      padding: 6px 8px;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 13px;
+    }
+    .chat-input-row button {
+      padding-inline: 14px;
+    }
+    .typing-indicator {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <h1>VocalFlow for Windows</h1>
+  <div class="subtitle">Hold global hotkey to dictate, release to paste at cursor.</div>
+
+  <div class="card">
+    <div class="label">Status</div>
+    <div id="status">Idle. Waiting for hotkey...</div>
+    <div class="small" id="hotkeyLabel"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">Live Transcript</div>
+    <textarea id="transcript" placeholder="Transcript will appear here..."></textarea>
+    <div style="margin-top:8px; display:flex; gap:8px;">
+      <button class="primary" id="recordBtn">Start Recording</button>
+      <button id="pasteBtn">Paste at Cursor</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label">Deepgram &amp; Groq Balance</div>
+    <div class="balances">
+      <div class="badge" id="dgBalance"><span class="status-dot ok" id="dgDot"></span><span id="dgLabel">Deepgram: --</span></div>
+      <div class="badge" id="gqBalance"><span class="status-dot ok" id="gqDot"></span><span id="gqLabel">Groq: --</span></div>
+    </div>
+    <div class="small" id="balanceStatus"></div>
+  </div>
+
+  <div class="card chat-card">
+    <div class="label">Chat</div>
+    <div id="chatMessages"></div>
+    <div class="typing-indicator" id="typingIndicator" style="display:none;">AI is typing...</div>
+    <div class="chat-input-row">
+      <input id="chatInput" type="text" placeholder="Ask anything or use voice to send..." />
+      <button id="sendBtn">Send</button>
+    </div>
+    <div class="chat-input-row" style="margin-top:4px; justify-content: flex-end;">
+      <button id="copyLastBtn">Copy last reply</button>
+      <button id="clearChatBtn">Clear chat</button>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
