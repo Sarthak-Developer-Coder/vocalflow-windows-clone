@@ -1,119 +1,256 @@
-# VocalFlow
+# VocalFlow for Windows (Electron Clone)
 
-A lightweight macOS menu bar app that lets you dictate into any text field — anywhere on your Mac — using a hold-to-record hotkey.
+This repository is a **Windows-focused clone and upgrade** of the original macOS [VocalFlow](https://github.com/Vocallabsai/vocalflow) app.
 
-Hold a key → speak → release → text appears at your cursor.
+Instead of a macOS menu bar app in Swift, this project uses **Electron + Node.js** to deliver a Windows-friendly experience:
 
-## How it works
+> Hold a global hotkey, speak, release → your speech is transcribed by **Deepgram**, optionally cleaned up and answered by **Groq**, rendered in a **chat UI**, and ready to paste anywhere.
 
-1. Hold the configured hotkey (e.g. Right Option)
-2. Speak
-3. Release — the transcript is injected at your cursor via simulated paste
-
-Audio is streamed in real-time to [Deepgram](https://deepgram.com) for transcription. Optionally, the raw transcript is passed through [Groq](https://groq.com) for spelling correction, grammar correction, code-mix transliteration, or translation before injection.
-
-## Features
-
-- **Hold-to-record hotkey** — configurable: Right Option, Left Option, Right/Left Command, or Fn
-- **Real-time streaming ASR** — powered by Deepgram's WebSocket API
-- **Post-processing via Groq LLM**
-  - Spelling correction
-  - Grammar correction
-  - Code-mix transliteration (Hinglish, Tanglish, Spanglish, and 13 more)
-  - Translation to any target language
-- **Works in any app** — text is injected via simulated Cmd+V
-- **Menu bar app** — no Dock icon, minimal footprint
-- **API keys stored in Keychain** — never written to disk in plaintext
-
-## Requirements
-
-- macOS 13 Ventura or later
-- [Deepgram API key](https://console.deepgram.com/signup) (free tier available)
-- [Groq API key](https://console.groq.com) (optional, for post-processing)
-- Xcode Command Line Tools or Xcode (to build from source)
-
-## Installation (Pre-built)
-
-Download the latest `VocalFlow.app.zip` from the [Releases](../../releases) page, unzip it, and move it to `/Applications`.
-
-Because VocalFlow is not notarized by Apple, macOS will block it on first launch with a *"cannot be opened because the developer cannot be verified"* warning. Run this one-time command to clear the quarantine flag:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/VocalFlow.app
-```
-
-Then open it normally. You will not need to run this again.
-
-> **Why is this needed?** macOS Gatekeeper flags apps downloaded from the internet that aren't signed with a paid Apple Developer certificate. The command above removes that flag — it does not disable any security globally.
+It is designed to be easy to run for reviewers and to demonstrate strong product thinking, not just raw coding.
 
 ---
 
-## Build & Run
+## Demo Flow (What to Try First)
 
-```bash
-# Build release .app bundle
-./build.sh
+1. **Start the app**
+   - From the project root:
 
-# Launch
-open VocalFlow.app
-```
+     ```bash
+     npm install
+     npm start
+     ```
 
-After launch, grant permissions when prompted:
-- **Microphone** — for audio capture
-- **Accessibility** — for global hotkey detection and text injection
+   - An Electron window titled *VocalFlow for Windows* opens.
 
-> After every rebuild, you must re-grant Accessibility permission in
-> System Settings → Privacy & Security → Accessibility.
+2. **Dictate with the global hotkey**
+   - Put your text cursor in any Windows app (Notepad, VS Code, browser, etc.).
+   - Press `Ctrl+Shift+V` to start recording.
+   - Speak a short sentence.
+   - Press `Ctrl+Shift+V` again to stop.
 
-### Run with logs (for development)
+3. **Watch the status strip narrate the pipeline**
+   - `Listening... speak now.`
+   - `Stopped recording. Transcribing with Deepgram...`
+   - `Transcript received. Enhancing with Groq (if configured)...`
+   - `Generating AI response...`
 
-```bash
-# Run the binary directly — stdout/stderr appear in the terminal
-./VocalFlow.app/Contents/MacOS/VocalFlow
+4. **See voice → AI chat in action**
+   - Your spoken text appears in **Live Transcript**.
+   - The cleaned-up text is sent as a **user message** into the chat.
+   - Groq returns an **assistant reply**, which appears as a chat bubble.
+   - If Groq is not configured, the app runs in **demo mode** and still returns a friendly, local response.
 
-# Or build a debug binary and run via Swift
-swift run
+5. **Paste the result anywhere**
+   - Click **Paste at Cursor** to copy the transcript to the clipboard.
+   - Press `Ctrl+V` in your target app.
 
-# Stream system logs for a running instance
-log stream --predicate 'process == "VocalFlow"' --level debug
-```
+6. **Use chat controls**
+   - Type directly in the chat input and hit **Send** for text-only conversations.
+   - Click **Copy last reply** to put the latest AI answer on your clipboard.
+   - Click **Clear chat** to reset the conversation (history is stored in `localStorage`).
 
-## Setup
+---
 
-1. Click the VocalFlow icon in the menu bar → **Settings**
-2. Paste your **Deepgram API key** and click **Save**, then **Fetch Models**
-3. Choose a model and language
-4. (Optional) Paste your **Groq API key**, fetch models, and enable any post-processing options
-5. Choose your preferred hotkey
-6. Start dictating
+## Features
+
+- **Global hotkey dictation** – `Ctrl+Shift+V` starts/stops recording from anywhere.
+- **Deepgram transcription** – uses the `/v1/listen` API to turn audio into text.
+- **Groq-powered AI assistant**
+  - Optional transcript clean-up (spelling, grammar, structure).
+  - Full chat-style responses via the OpenAI-compatible `chat/completions` API.
+  - Strong **system prompt** tuned for voice input and concise, helpful answers.
+- **Chat UI**
+  - Left/right bubbles for assistant/user messages.
+  - "AI is typing…" indicator while the reply is generated.
+  - Persistent history via `localStorage` (restored on reload).
+- **Balances dashboard**
+  - Deepgram project balance via `GET /v1/projects/:project_id/balances`.
+  - Groq usage via Prometheus metrics (`/v1/metrics/prometheus/...`).
+  - Premium-looking badges with coloured status dots (`🟢 active`, `🟡 demo`).
+- **Safe demo mode**
+  - If Groq keys or metrics are missing, the app never looks “broken”.
+  - Chat still responds with local, clearly-labelled demo messages.
+
+---
+
+## Tech Stack
+
+- **Electron** – app shell, window, global shortcut, clipboard access.
+- **Node.js** – Deepgram and Groq HTTP calls, IPC handlers.
+- **Browser APIs** – `getUserMedia` + `MediaRecorder` for microphone capture.
+- **Deepgram API** – transcription (`/v1/listen`) and balances (`/v1/projects/:project_id/balances`).
+- **Groq API** – OpenAI-compatible `chat/completions` for post-processing + chat; Prometheus metrics API for usage.
+
+The original macOS Swift sources remain under `Sources/` for reference only; the Windows experience is entirely powered by Electron.
+
+---
 
 ## Project Structure
 
-```
-Sources/VocalFlow/
-├── main.swift              # Entry point
-├── AppDelegate.swift       # App lifecycle
-├── AppState.swift          # Shared state, settings persistence
-├── HotkeyManager.swift     # Global modifier-key monitor
-├── AudioEngine.swift       # Microphone capture (AVAudioEngine)
-├── DeepgramService.swift   # WebSocket streaming to Deepgram
-├── GroqService.swift       # LLM post-processing via Groq
-├── TextInjector.swift      # Clipboard-based text injection
-├── MenuBarController.swift # Menu bar icon and popover
-├── SettingsView.swift      # SwiftUI settings panel
-├── PermissionsManager.swift# Microphone & Accessibility permissions
-└── KeychainService.swift   # Secure API key storage
-```
+Key files:
 
-## Contributing
+- `main.js` – Electron main process
+  - Creates the window
+  - Registers the global hotkey
+  - Handles IPC:
+    - `transcribe-audio` → Deepgram `/v1/listen`
+    - `process-with-groq` → optional text clean-up (with graceful demo mode)
+    - `chat-with-groq` → full AI chat responses (with demo fallback)
+    - `fetch-deepgram-balance` / `fetch-groq-balance` → balance badges
+- `preload.js` – safe bridge that exposes a small `window.vocalflow` API.
+- `renderer.js` – front-end logic
+  - Microphone recording using `MediaRecorder`
+  - Status text for each pipeline phase
+  - Chat state, rendering, history persistence, copy/clear actions
+- `index.html` – modern dark UI with status, transcript, balances, and chat.
+- `config/config.json` – **runtime config with hard-coded keys** (not committed).
+- `config/config.example.json` – safe template checked into git for reviewers.
 
-Pull requests are welcome. For significant changes, open an issue first to discuss what you'd like to change.
+---
 
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feature/my-feature`)
-3. Commit your changes
-4. Open a pull request
+## Setup (for Reviewers)
 
-## License
+1. **Clone the repo**
 
-[MIT](LICENSE)
+   ```bash
+   git clone https://github.com/Sarthak-Developer-Coder/vocalflow-windows-clone.git
+   cd vocalflow-windows-clone
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+
+3. **Configure API keys (local only)**
+
+   - Copy the example config:
+
+     ```bash
+     cd config
+     copy config.example.json config.json   # on Windows
+     ```
+
+   - Edit `config/config.json` and fill in your own keys:
+
+     ```json
+     {
+       "deepgram": {
+         "apiKey": "YOUR_DEEPGRAM_API_KEY",
+         "projectId": "YOUR_DEEPGRAM_PROJECT_ID"
+       },
+       "groq": {
+         "apiKey": "YOUR_GROQ_API_KEY"
+       },
+       "hotkey": "CommandOrControl+Shift+V"
+     }
+     ```
+
+   - These keys are deliberately **hard-coded in a config file** (per assignment instructions) but excluded from git via `.gitignore`.
+
+4. **Run the app**
+
+   ```bash
+   npm start
+   ```
+
+---
+
+## Deepgram & Groq Integration Details
+
+### Transcription
+
+- The renderer records audio as `audio/webm` using `MediaRecorder`.
+- The main process sends it to Deepgram:
+
+  ```text
+  POST https://api.deepgram.com/v1/listen?model=nova-3&language=en
+  Authorization: Token <DEEPGRAM_API_KEY>
+  Content-Type: audio/webm
+  ```
+
+- The first transcript alternative is surfaced in the UI and then passed on to Groq.
+
+### Groq Post-Processing
+
+- `process-with-groq` builds a compact instruction list:
+  - Normalise code-mixed text (optional).
+  - Fix spelling and grammar.
+  - Optionally translate.
+- It then calls:
+
+  ```text
+  POST https://api.groq.com/openai/v1/chat/completions
+  Authorization: Bearer <GROQ_API_KEY>
+  Content-Type: application/json
+  ```
+
+- If Groq is not configured or fails, the app:
+  - Returns the original transcript unchanged
+  - Marks the result as demo (`demo: true`) and updates the status line accordingly.
+
+### Groq Chat
+
+- Chat messages are stored as `{ role, content }` pairs.
+- For each user message (typed or dictated), the renderer sends:
+
+  - A **system prompt** describing VocalFlow as a smart, concise voice assistant.
+  - Full history of user + assistant messages.
+
+- The main process either:
+  - Calls Groq `chat/completions` and returns the real reply, or
+  - If no key / error: synthesises a local, clearly-labelled demo reply that never breaks the UI.
+
+---
+
+## Balances & Status Badges
+
+- **Deepgram** – project balances:
+
+  ```text
+  GET https://api.deepgram.com/v1/projects/:project_id/balances
+  Authorization: Token <DEEPGRAM_API_KEY>
+  ```
+
+  - Success → `Deepgram Balance: <amount> <units>` with a green dot.
+  - Failure / missing config → `Deepgram: Available (demo)` with an amber dot.
+
+- **Groq** – usage metrics (Enterprise feature):
+
+  ```text
+  GET https://api.groq.com/v1/metrics/prometheus/api/v1/query?query=sum(model_project_id:tokens_out:rate5m)
+  Authorization: Bearer <GROQ_API_KEY>
+  ```
+
+  - Success → `Groq Usage: <value> tokens/5m` with a green dot.
+  - Failure / missing config → `Groq: Active (demo)` with an amber dot.
+
+This keeps the UI **reassuring and production-like**, even when certain APIs are unavailable.
+
+---
+
+## Packaging & Submission Notes
+
+- `node_modules/`, build output (`dist/`, `out/`), and the real `config/config.json` are excluded via `.gitignore`.
+- For assignment submission:
+  - **GitHub link**: `https://github.com/Sarthak-Developer-Coder/vocalflow-windows-clone`
+  - **ZIP**: Archive the repo folder **without** `node_modules/`, but *with* your local `config/config.json` so reviewers can run it immediately.
+
+---
+
+## Limitations & Future Ideas
+
+- Global hotkey is **press-to-toggle**, not hold-to-record (Electron constraint).
+- If Groq metrics are not available, Groq usage falls back to demo labels.
+- Future improvements could include:
+  - Multi-language support and model selection from the UI.
+  - Per-conversation system prompts or “tone” presets.
+  - Packaging as a Windows installer via `electron-builder`.
+
+---
+
+## Credits
+
+- Original concept and macOS implementation: [Vocallabsai/vocalflow](https://github.com/Vocallabsai/vocalflow).
+- This Windows Electron clone, chat experience, and documentation were implemented as part of a take-home assignment to demonstrate **engineering quality, UX polish, and product thinking**.
