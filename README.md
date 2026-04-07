@@ -1,5 +1,5 @@
 # VocalFlow for Windows (Electron Clone)
-
+A production-ready Windows clone of VocalFlow built with Electron, featuring real-time voice transcription, AI-powered chat, and a robust demo-safe architecture.
 This repository is a **Windows-focused clone and upgrade** of the original macOS [VocalFlow](https://github.com/Vocallabsai/vocalflow) app.
 
 Instead of a macOS menu bar app in Swift, this project uses **Electron + Node.js** to deliver a Windows-friendly experience:
