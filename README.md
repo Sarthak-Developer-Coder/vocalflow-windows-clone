@@ -230,13 +230,10 @@ This keeps the UI **reassuring and production-like**, even when certain APIs are
 
 ---
 
-## Packaging & Submission Notes
+## Packaging Notes
 
-- `node_modules/`, build output (`dist/`, `out/`), and the real `config/config.json` are excluded via `.gitignore`.
-- For assignment submission:
-  - **GitHub link**: `https://github.com/Sarthak-Developer-Coder/vocalflow-windows-clone`
-  - **ZIP**: Archive the repo folder **without** `node_modules/`, but *with* your local `config/config.json` so reviewers can run it immediately.
-
+- node_modules/ and build output are excluded via .gitignore.
+- Use config/config.example.json as a template and add your own API keys locally before running the app.
 ---
 
 ## Limitations & Future Ideas
